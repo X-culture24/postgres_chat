@@ -1,0 +1,83 @@
+/* ChatPage.css */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100vh;
+    background-color: #000;
+    color: white;
+    font-family: 'Roboto', sans-serif;
+    padding: 20px;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.back-btn {
+    background-color: transparent;
+    border: none;
+    color: #1e90ff;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.chat-bubbles {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+.message {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    max-width: 70%;
+}
+
+.sender {
+    background-color: #1e90ff;
+    align-self: flex-start;
+}
+
+.receiver {
+    background-color: #333;
+    align-self: flex-end;
+}
+
+.message-input {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.message-input input {
+    width: 80%;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #333;
+    color: white;
+    font-size: 16px;
+    border: none;
+}
+
+.message-input button {
+    padding: 10px 20px;
+    background-color: #1e90ff;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-left: 10px;
+}
+
+.message-input button:hover {
+    background-color: #4682b4;
+}

@@ -1,52 +1,42 @@
+# run.py
+import os
+from flask import Flask, request, jsonify, render_template
+from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from threading import Thread
-from run import app
-import time
 
-# Database connection settings
-DATABASE_URL = "postgresql://gift:gift123@localhost:5432/realtime_app"
+# Initialize Flask app
+app = Flask(__name__)
 
-def listen_for_changes():
-    try:
-        # Establishing a connection to PostgreSQL
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
+# Enable CORS for Flask
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-        # Start listening to the 'user_changes' channel
-        cur.execute('LISTEN user_changes;')
-        print("Listening on the 'user_changes' channel...")
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://gift:gift123@localhost/realtime_app'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-        while True:
-            # Wait for a notification
-            conn.poll()
-            while conn.notifies:
-                notify = conn.notifies.pop()
-                print(f"Received notification: {notify.payload}")
+# Initialize the database connection
+db = SQLAlchemy(app)
 
-                # Handle the notification (e.g., broadcast, log, etc.)
-                try:
-                    event_type, user_id = notify.payload.split(":")
-                    print(f"Event: {event_type}, User ID: {user_id}")
-                except ValueError:
-                    print(f"Error parsing notification payload: {notify.payload}")
+# Initialize SocketIO with CORS
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-            time.sleep(1)  # Sleep for a short time to avoid busy-waiting
+# Import listener after app initialization
+from listener import start_listener
 
-    except Exception as e:
-        print(f"Error in listener: {e}")
-
-def start_listener():
-    # Start the listener in a separate thread
-    thread = Thread(target=listen_for_changes)
-    thread.daemon = True
-    thread.start()
-    print("Listener thread started.")
-
-# Use app.app_context() to start listener after the app is fully initialized
-with app.app_context():
+# Start the listener in a separate thread
+@app.before_first_request
+def start_pg_listener():
     start_listener()
-    print("Listener started and listening for database changes.")
+    print("Started PostgreSQL listener in the background.")
+
+# Routes and app initialization
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)

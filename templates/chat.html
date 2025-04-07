@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Interface</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-direction: column; gap: 20px; }
+        .chat-box { border: 1px solid #ddd; padding: 15px; height: 400px; overflow-y: auto; }
+        .message { margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 5px; }
+        .message.self { background: #e3f2fd; text-align: right; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; font-size: 16px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .activity { color: #666; font-style: italic; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat Interface</h1>
+        
+        <div class="form-group">
+            <input type="text" id="userId" placeholder="Your User ID">
+            <button onclick="connectToChat()">Connect</button>
+        </div>
+
+        <div id="chatContainer" style="display: none;">
+            <div class="chat-box" id="chatBox"></div>
+            
+            <div class="input-area">
+                <input type="text" id="recipientId" placeholder="Recipient ID">
+                <input type="text" id="messageInput" placeholder="Type your message">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div id="activityLogs"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script>
+        let socket;
+        
+        function connectToChat() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) return alert('Please enter your user ID');
+            
+            socket = io({
+                query: { user_id: userId }
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('chatContainer').style.display = 'block';
+                addActivity(`Connected to chat as user ${userId}`);
+            });
+
+            socket.on('connection_ack', (data) => {
+                addActivity(`Server acknowledged connection: ${JSON.stringify(data)}`);
+            });
+
+            socket.on('receive_message', (data) => {
+                addMessage(data, false);
+            });
+
+            socket.on('chat_activity', (data) => {
+                addActivity(`Activity: ${data.from} → ${data.to}: ${data.content}`);
+            });
+
+            socket.on('error', (error) => {
+                addActivity(`Error: ${error.error}`);
+            });
+        }
+
+        function sendMessage() {
+            const recipientId = document.getElementById('recipientId').value;
+            const message = document.getElementById('messageInput').value;
+            const userId = document.getElementById('userId').value;
+            
+            if (!recipientId || !message) return alert('Please fill all fields');
+            
+            const data = {
+                sender_id: userId,
+                recipient_id: recipientId,
+                message: message
+            };
+            
+            socket.emit('send_message', data);
+            addMessage({...data, timestamp: new Date().toISOString()}, true);
+            document.getElementById('messageInput').value = '';
+        }
+
+        function addMessage(data, isSelf) {
+            const chatBox = document.getElementById('chatBox');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSelf ? 'self' : ''}`;
+            
+            const time = new Date(data.timestamp).toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <strong>${isSelf ? 'You' : 'User '+data.sender_id}</strong>
+                <span style="color: #666; font-size: 0.8em">(${time})</span><br>
+                ${data.message}
+            `;
+            
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addActivity(message) {
+            const activityLogs = document.getElementById('activityLogs');
+            const activityDiv = document.createElement('div');
+            activityDiv.className = 'activity';
+            activityDiv.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            activityLogs.appendChild(activityDiv);
+        }
+    </script>
+</body>
+</html>

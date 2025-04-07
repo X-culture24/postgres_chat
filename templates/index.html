@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Realtime Chat App</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-direction: column; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        input, button { padding: 10px; font-size: 16px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .logs { background: #f5f5f5; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Realtime Chat App</h1>
+        
+        <div class="form-group">
+            <h2>Register User</h2>
+            <input type="text" id="name" placeholder="Name">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <input type="text" id="interest" placeholder="Interest">
+            <button onclick="registerUser()">Register</button>
+        </div>
+
+        <div class="form-group">
+            <h2>Find Users by Interest</h2>
+            <input type="text" id="searchInterest" placeholder="Enter interest">
+            <button onclick="findUsers()">Search</button>
+            <div id="usersList"></div>
+        </div>
+
+        <div>
+            <h2>Server Logs</h2>
+            <div class="logs" id="serverLogs"></div>
+        </div>
+
+        <div>
+            <a href="/chat">Go to Chat Interface</a>
+        </div>
+    </div>
+
+    <script>
+        function registerUser() {
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                interest: document.getElementById('interest').value
+            };
+
+            fetch('/user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                logToConsole(`User created: ${JSON.stringify(data)}`);
+            })
+            .catch(error => {
+                logToConsole(`Error: ${error}`);
+            });
+        }
+
+        function findUsers() {
+            const interest = document.getElementById('searchInterest').value;
+            
+            fetch(`/users?interest=${interest}`)
+            .then(response => response.json())
+            .then(data => {
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = data.users.map(user => 
+                    `<div>${user.name} (${user.email}) - ${user.interest}</div>`
+                ).join('');
+                logToConsole(`Found users: ${JSON.stringify(data)}`);
+            })
+            .catch(error => {
+                logToConsole(`Error: ${error}`);
+            });
+        }
+
+        function logToConsole(message) {
+            const logs = document.getElementById('serverLogs');
+            logs.innerHTML += `<div>${new Date().toISOString()}: ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+    </script>
+</body>
+</html>
